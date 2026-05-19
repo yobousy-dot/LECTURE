@@ -140,62 +140,68 @@
   </div>
 
   <script>
-    const synth = window.speechSynthesis;
-    const voiceSelect = document.getElementById('voice');
-    const speedInput = document.getElementById('speed');
-    let voices = [];
-    let utterance = null;
+let speech;
+let voices = [];
 
-    function loadVoices() {
-      voices = synth.getVoices().filter(v => v.lang.startsWith('fr'));
+function loadVoices() {
+  voices = speechSynthesis.getVoices();
+}
 
-      voiceSelect.innerHTML = '';
+loadVoices();
 
-      voices.forEach((voice, index) => {
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `${voice.name} (${voice.lang})`;
-        voiceSelect.appendChild(option);
-      });
-    }
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
 
-    loadVoices();
+function playText() {
+  speechSynthesis.cancel();
 
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = loadVoices;
-    }
+  const text = document.getElementById('text').value;
+  const speed = document.getElementById('speed').value;
 
-    function playText() {
-      const text = document.getElementById('text').value.trim();
+  if (!text.trim()) {
+    alert('Veuillez entrer un texte.');
+    return;
+  }
 
-      if (!text) {
-        alert('Veuillez entrer un texte.');
-        return;
-      }
+  speech = new SpeechSynthesisUtterance(text);
+  speech.lang = 'fr-FR';
+  speech.rate = speed;
 
-      stopText();
+  const frenchVoice = voices.find(v =>
+    v.lang.toLowerCase().startsWith('fr')
+  );
 
-      utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      utterance.rate = parseFloat(speedInput.value);
+  if (frenchVoice) {
+    speech.voice = frenchVoice;
+  }
 
-      const selectedVoice = voices[voiceSelect.value];
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
+  speechSynthesis.speak(speech);
+}
 
-      synth.speak(utterance);
-    }
+function pauseText() {
+  if (speechSynthesis.speaking) {
+    speechSynthesis.pause();
+  }
+}
 
-    function pauseText() {
-      if (synth.speaking) {
-        synth.pause();
-      }
-    }
+function stopText() {
+  speechSynthesis.cancel();
+}
 
-    function stopText() {
-      synth.cancel();
-    }
-  </script>
+document.getElementById('fileInput').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    document.getElementById('text').value = e.target.result;
+  };
+
+  reader.readAsText(file);
+});
+</script>
 </body>
 </html>
