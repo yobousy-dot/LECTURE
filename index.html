@@ -3,205 +3,183 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lecteur de Texte Français</title>
+  <title>Lecteur de texte français</title>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-
     body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
       margin: 0;
-      background: #111827;
-      color: white;
+      padding: 40px;
       display: flex;
       justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
     }
 
     .container {
       width: 100%;
       max-width: 800px;
-      background: #1f2937;
+      background: white;
+      padding: 30px;
       border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
     h1 {
-      margin-top: 0;
       text-align: center;
-      color: #60a5fa;
+      margin-bottom: 20px;
     }
 
     textarea {
       width: 100%;
       height: 250px;
-      border: none;
-      border-radius: 12px;
-      padding: 16px;
-      resize: vertical;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
       font-size: 16px;
-      background: #374151;
-      color: white;
-      outline: none;
+      resize: vertical;
+      box-sizing: border-box;
     }
 
     .controls {
-      margin-top: 20px;
-      display: grid;
-      gap: 16px;
-    }
-
-    .row {
       display: flex;
-      gap: 12px;
       flex-wrap: wrap;
-      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     button {
+      padding: 12px 20px;
       border: none;
       border-radius: 10px;
-      padding: 12px 18px;
-      font-size: 15px;
       cursor: pointer;
+      font-size: 15px;
       transition: 0.2s;
-      font-weight: bold;
     }
 
     button:hover {
-      transform: translateY(-2px);
+      opacity: 0.9;
     }
 
     .play {
-      background: #22c55e;
+      background: #28a745;
       color: white;
     }
 
     .pause {
-      background: #f59e0b;
-      color: white;
+      background: #ffc107;
+      color: black;
     }
 
     .stop {
-      background: #ef4444;
+      background: #dc3545;
       color: white;
     }
 
-    select, input[type="range"] {
-      width: 100%;
+    .file {
+      background: #007bff;
+      color: white;
+    }
+
+    .slider-container {
+      margin-top: 20px;
     }
 
     label {
       display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-      color: #d1d5db;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
 
-    .footer {
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .info {
       margin-top: 20px;
-      text-align: center;
-      font-size: 13px;
-      color: #9ca3af;
+      color: #555;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Lecteur de Texte Français</h1>
+    <h1>Lecteur de texte français</h1>
 
-    <textarea id="text" placeholder="Écris ou colle ton texte ici..."></textarea>
+    <textarea id="text" placeholder="Colle ton texte ici..."></textarea>
 
     <div class="controls">
-      <div>
-        <label for="voice">Voix française</label>
-        <select id="voice"></select>
-      </div>
+      <button class="play" onclick="playText()">▶ Lecture</button>
+      <button class="pause" onclick="pauseText()">⏸ Pause</button>
+      <button class="stop" onclick="stopText()">⏹ Stop</button>
 
-      <div>
-        <label for="speed">Vitesse de lecture</label>
-        <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1">
-      </div>
-
-      <div class="row">
-        <button class="play" onclick="playText()">▶ Lecture</button>
-        <button class="pause" onclick="pauseText()">⏸ Pause</button>
-        <button class="stop" onclick="stopText()">⏹ Stop</button>
-      </div>
+      <label class="file">
+        Importer un fichier TXT
+        <input type="file" id="fileInput" accept=".txt" hidden>
+      </label>
     </div>
 
-    <div class="footer">
-      Fonctionne sans API grâce à la synthèse vocale intégrée du navigateur.
+    <div class="slider-container">
+      <label for="speed">Vitesse de lecture</label>
+      <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1">
+    </div>
+
+    <div class="info">
+      Fonctionne sans API externe grâce à la synthèse vocale intégrée du navigateur.
     </div>
   </div>
 
   <script>
-let speech;
-let voices = [];
+    let speech;
 
-function loadVoices() {
-  voices = speechSynthesis.getVoices();
-}
+    function playText() {
+      stopText();
 
-loadVoices();
+      const text = document.getElementById('text').value;
+      const speed = document.getElementById('speed').value;
 
-if (speechSynthesis.onvoiceschanged !== undefined) {
-  speechSynthesis.onvoiceschanged = loadVoices;
-}
+      if (!text.trim()) {
+        alert('Veuillez entrer un texte.');
+        return;
+      }
 
-function playText() {
-  speechSynthesis.cancel();
+      speech = new SpeechSynthesisUtterance(text);
+      speech.lang = 'fr-FR';
+      speech.rate = speed;
 
-  const text = document.getElementById('text').value;
-  const speed = document.getElementById('speed').value;
+      const voices = speechSynthesis.getVoices();
+      const frenchVoice = voices.find(v => v.lang.includes('fr'));
 
-  if (!text.trim()) {
-    alert('Veuillez entrer un texte.');
-    return;
-  }
+      if (frenchVoice) {
+        speech.voice = frenchVoice;
+      }
 
-  speech = new SpeechSynthesisUtterance(text);
-  speech.lang = 'fr-FR';
-  speech.rate = speed;
+      speechSynthesis.speak(speech);
+    }
 
-  const frenchVoice = voices.find(v =>
-    v.lang.toLowerCase().startsWith('fr')
-  );
+    function pauseText() {
+      speechSynthesis.pause();
+    }
 
-  if (frenchVoice) {
-    speech.voice = frenchVoice;
-  }
+    function stopText() {
+      speechSynthesis.cancel();
+    }
 
-  speechSynthesis.speak(speech);
-}
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
 
-function pauseText() {
-  if (speechSynthesis.speaking) {
-    speechSynthesis.pause();
-  }
-}
+      if (!file) return;
 
-function stopText() {
-  speechSynthesis.cancel();
-}
+      const reader = new FileReader();
 
-document.getElementById('fileInput').addEventListener('change', function(event) {
-  const file = event.target.files[0];
+      reader.onload = function(e) {
+        document.getElementById('text').value = e.target.result;
+      };
 
-  if (!file) return;
+      reader.readAsText(file);
+    });
 
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    document.getElementById('text').value = e.target.result;
-  };
-
-  reader.readAsText(file);
-});
-</script>
+    speechSynthesis.onvoiceschanged = () => {
+      speechSynthesis.getVoices();
+    };
+  </script>
 </body>
 </html>
